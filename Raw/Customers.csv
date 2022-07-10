@@ -1,0 +1,16 @@
+CustomerID,CustomerName,CustomerValueSegment,CustomerAgeBand
+1,Gené Barthus,Low,18-25
+2,Jane Bloggs,Low,18-25
+3,Fred Bloggs,Low,18-25
+4,Paul Keys,Medium,25-40
+5,Dave Sanderson,Medium,25-40
+6,Mark Roberts,Medium,25-40
+7,Davinder Birk,High,41-55
+8,Matt Shearsby,High,41-55
+9,Malcolm Cathcart,High,41-55
+10,Joanne Boomer,Low,41-55
+11,Helen Monterio,Medium,41-55
+12,Tom Jaep,High,56+
+13,Gene Barthus,Low,56+
+14,Hannah Reed,Medium,56+
+15,Matt Thomas,High,56+

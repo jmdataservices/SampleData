@@ -1,0 +1,13 @@
+ProductID,ProductName,ProductUnit,ProductQty,ProductCategory,SegmentID
+1,Eggs,ea,6,Dairy,1
+2,Milk,ltr,3,Dairy,1
+3,Cheese,g,100,Dairy,1
+4,Spaghetti,g,500,Dried,2
+5,Rice,g,500,Dried,3
+6,Rice,g,750,Dried,4
+7,Mango,g,100,Dried,3
+8,Baked Beans,100,g,Tinned,3
+9,Spaghetti,100,g,Tinned,4
+10,Beef,100,g,Meat,2
+11,Lamb,500,g,Meat,2
+12,Sausage,1000,g,Meat,2

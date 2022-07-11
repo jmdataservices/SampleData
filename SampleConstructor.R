@@ -113,7 +113,43 @@ dat_newtrans$TransactionID <- c(1:length(dat_newtrans$UserID))
 dat_newtrans %>% head()
 
 for (tran_id in dat_newtrans$TransactionID) {
-        
+        user <- dat_newtrans[dat_newtrans$TransactionID==tst_tran,]$UserID
+        if(dat_customers[dat_customers$CustomerID==user,]$CustomerAgeBand == "56+") {
+                prop_segs_group <- prop_segs %>% 
+                        filter(
+                                Demo == "Old"
+                        )
+                prop_prod_groups <- prop_prod %>% 
+                        filter(
+                                Demo == "Old"
+                        )
+                typical <- 8
+        } else {
+                prop_segs_group <- prop_segs %>% 
+                        filter(
+                                Demo == "Regular"
+                        )
+                prop_prod_groups <- prop_prod %>% 
+                        filter(
+                                Demo == "Regular"
+                        )
+                typical <- 11
+        }
+        shopsize <- round(runif(1, min = 1, max = typical),0)
+        tmp_segs <- data.frame()
+        for (j in c(1:shopsize)) {
+                tmp_segs <- tmp_segs %>% 
+                        rbind(
+                                prop_segs_group %>% 
+                                        mutate(
+                                                Prop = sapply(Prop, function(x) {runif(1, min = 0, max = x)[1]})
+                                        ) %>% 
+                                        arrange(
+                                                desc(Prop)
+                                        ) %>% 
+                                        slice_head(n = 1)
+                        )
+        }
 }
 
 

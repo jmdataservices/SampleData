@@ -9,7 +9,28 @@ dat_customers <- read.csv("Raw/Customers.csv")
 
 dat_transactions <- read.csv("Raw/Transactions.csv") %>% head(4)
 
-tst_customers <- dat_customers %>% head(20)
+dat_names <- read.csv("Raw/names.csv")
+dat_names$CustomerID <- c(1:length(dat_names$First.Name))
+
+dat_customers1 <- dat_names %>% 
+        cbind(
+                sample_n(dat_customers, size = 200, replace = T) %>% 
+                        select(
+                                CustomerValueSegment,
+                                CustomerAgeBand
+                        )
+        ) %>% 
+        mutate(
+                CustomerName = paste0(First.Name, " ", Last.Name)
+        ) %>% 
+        select(
+                CustomerID,
+                CustomerName,
+                CustomerValueSegment,
+                CustomerAgeBand
+        )
+
+dat_customers
 
 prop_days <- data.frame(
         Day = rep(c(1,2,3,4,5,6,7),2),
@@ -44,7 +65,8 @@ prop_prod
 dat_newtrans <- data.frame()
 ydayshop <- 0
 
-for (user in tst_customers$CustomerID) {
+for (user in dat_customers$CustomerID) {
+        print(paste0("Processing Customer ", user, ", ", dat_customers[dat_customers$CustomerID==user,]$CustomerName))
         if(dat_customers[dat_customers$CustomerID==user,]$CustomerAgeBand == "56+") {
                 prop_days_group <- prop_days %>% 
                         filter(
@@ -75,7 +97,7 @@ for (user in tst_customers$CustomerID) {
                 typical <- 11
         }
         
-        for (i in c(1:31)) {
+        for (i in c(1:(365))) {
                 shopdate <- date("2012-06-30") + days(i)
                 shopday <- wday(shopdate)
                 if (ydayshop == 0) {
@@ -111,9 +133,11 @@ dat_newtrans <- dat_newtrans %>%
 dat_newtrans$TransactionID <- c(1:length(dat_newtrans$UserID))
 
 dat_newtrans %>% head()
+baskets <- data.frame()
 
 for (tran_id in dat_newtrans$TransactionID) {
-        user <- dat_newtrans[dat_newtrans$TransactionID==tst_tran,]$UserID
+        print(paste0("Processing transaction ID ", tran_id, " of ", max(dat_newtrans$TransactionID)))
+        user <- dat_newtrans[dat_newtrans$TransactionID==tran_id,]$UserID
         if(dat_customers[dat_customers$CustomerID==user,]$CustomerAgeBand == "56+") {
                 prop_segs_group <- prop_segs %>% 
                         filter(
@@ -147,10 +171,106 @@ for (tran_id in dat_newtrans$TransactionID) {
                                         arrange(
                                                 desc(Prop)
                                         ) %>% 
-                                        slice_head(n = 1)
+                                        slice_head(n = 1) %>% 
+                                        select(
+                                                SegmentID
+                                        )
+                        )
+        }
+        tmpbasket <- prop_prod_groups %>% 
+                sample_n(
+                        size = shopsize,
+                        replace = F
+                )
+        tmpbasket$SegmentID <- tmp_segs$SegmentID
+        baskets <- baskets %>% 
+                rbind(
+                        tmpbasket %>% 
+                                mutate(
+                                        TransactionID = tran_id,
+                                        Quantity = sapply(0.85, function(x) {ceiling(rgamma(12, x))[c(1:shopsize)]})
+                                ) %>% 
+                                select(
+                                        TransactionID,
+                                        ProductID,
+                                        SegmentID,
+                                        Quantity
+                                )
+                )
+                
+}
+
+baskets
+
+discount_schedule <- data.frame()
+
+for (i in c(1:60)) {
+        disc_month <- date("2012-06-01") + months(i)
+        disc_count <- rpois(1,1)
+        disc_total <- runif(disc_count, 0.05, 0.4)
+        disc_prods <- dat_products %>% 
+                sample_n(
+                        size = disc_count,
+                        replace = F
+                )
+        if (disc_count > 0) {
+                discount_schedule <- discount_schedule %>% 
+                        rbind(
+                                data.frame(
+                                        DiscountMonth = c(disc_month),
+                                        ProductID = disc_prods$ProductID,
+                                        DiscountTotal = disc_total
+                                )
                         )
         }
 }
 
+discount_schedule
 
+dat_newtrans <- dat_newtrans %>% 
+        left_join(
+                by = "TransactionID",
+                baskets
+        ) %>% 
+        left_join(
+                by = "ProductID",
+                dat_products %>% 
+                        select(
+                                -SegmentID
+                        ) %>% 
+                        mutate(
+                                StorePrice = c(
+                                        1.95,
+                                        2.29,
+                                        2.49,
+                                        0.69,
+                                        0.89,
+                                        1.29,
+                                        1.89,
+                                        0.29,
+                                        0.39,
+                                        2.49,
+                                        4.09,
+                                        6.99
+                                ),
+                                CostPrice = round(StorePrice * rnorm(12, 0.75, 0.1), 1) - 0.01
+                        )
+        ) %>% 
+        mutate(
+                StorePrice = ifelse(SegmentID == 1, StorePrice + ((ProductID %% 4) / 10) + 0.1, StorePrice),
+                StorePrice = ifelse(SegmentID == 4, StorePrice + ((ProductID %% 3) / 10) + 0.05, StorePrice),
+                CostPrice = ifelse(SegmentID == 1, CostPrice + ((ProductID %% 5) / 10) + 0.05, CostPrice),
+                CostPrice = ifelse(SegmentID == 4, CostPrice + ((ProductID %% 4) / 20) + 0.05, CostPrice),
+                DiscountMonth = as_date(paste0(str_sub(ShopDate, 1, 8), "01"))
+        ) %>% 
+        left_join(
+                by = c("DiscountMonth", "ProductID"),
+                discount_schedule
+        ) %>% 
+        mutate(
+                DiscountTotal = ifelse(is.na(DiscountTotal), 1, 1 - DiscountTotal),
+                StorePrice = StorePrice * DiscountTotal
+        )
+
+dat_newtrans %>% head()
 

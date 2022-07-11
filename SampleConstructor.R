@@ -12,7 +12,7 @@ dat_transactions <- read.csv("Raw/Transactions.csv") %>% head(4)
 dat_names <- read.csv("Raw/names.csv")
 dat_names$CustomerID <- c(1:length(dat_names$First.Name))
 
-dat_customers1 <- dat_names %>% 
+dat_customers <- dat_names %>% 
         cbind(
                 sample_n(dat_customers, size = 200, replace = T) %>% 
                         select(
@@ -97,7 +97,7 @@ for (user in dat_customers$CustomerID) {
                 typical <- 11
         }
         
-        for (i in c(1:(365))) {
+        for (i in c(1:(365*4))) {
                 shopdate <- date("2012-06-30") + days(i)
                 shopday <- wday(shopdate)
                 if (ydayshop == 0) {
